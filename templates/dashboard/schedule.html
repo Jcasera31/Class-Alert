@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}My Schedule{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('dashboard.home') }}" class="back-btn">← Back</a>
+
+<div class="card">
+    <div class="schedule-header">
+        <h2 class="schedule-title">📘 My Class Schedule</h2>
+
+        <div class="top-right-controls">
+
+            <!-- SEARCH BAR -->
+            <form method="GET" action="{{ url_for('schedule.view_schedules') }}" style="display:inline;">
+                <input type="text" name="q" placeholder="Search subject..." value="{{ q or '' }}" />
+                {% if selected_semester and selected_year %}
+                    <input type="hidden" name="semester" value="{{ selected_semester }}||{{ selected_year }}">
+                {% endif %}
+                <button type="submit">Search</button>
+            </form>
+
+            <!-- TERM FILTER -->
+            <form method="GET" action="{{ url_for('schedule.view_schedules') }}" style="display:inline;">
+                <select name="semester" onchange="this.form.submit()">
+                    <option value="">All Terms</option>
+                    {% for sem, yr in terms %}
+                        <option value="{{ sem }}||{{ yr }}"
+                            {% if selected_semester == sem and selected_year == yr %}selected{% endif %}>
+                            {{ sem }} - {{ yr }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <!-- ADD BUTTON -->
+            <button type="button" id="addBtn">+ Add Class</button>
+
+        </div>
+    </div>
+
+    <table class="schedule-table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Days</th>
+                <th>Time</th>
+                <th>Semester</th>
+                <th>Year</th>
+                <th>Alarm</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for s in schedules %}
+            <tr>
+                <td>{{ s.subject }}</td>
+                <td>{{ s.days }}</td>
+                <td>{{ s.time }}</td>
+                <td>{{ s.semester }}</td>
+                <td>{{ s.academic_year }}</td>
+                <td>{{ "On" if s.alarm_enabled else "Off" }} ({{ s.alarm_offset_minutes }}m)</td>
+                <td class="actions-cell">
+                    <button class="editBtn"
+                        data-id="{{ s.id }}"
+                        data-subject="{{ s.subject }}"
+                        data-days="{{ s.days }}"
+                        data-time="{{ s.time }}"
+                        data-semester="{{ s.semester }}"
+                        data-year="{{ s.academic_year }}"
+                        data-alarm="{{ '1' if s.alarm_enabled else '0' }}"
+                        data-offset="{{ s.alarm_offset_minutes }}"
+                        data-custom="{{ s.custom_alarm_time or '' }}">
+                        Edit
+                    </button>
+
+                    <form class="deleteForm"
+                          method="POST"
+                          action="{{ url_for('schedule.delete_schedule_route', schedule_id=s.id) }}"
+                          onsubmit="return confirm('Delete this class?');">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+    <div class="modal-inner">
+
+        <h3 id="modalTitle">Add Class</h3>
+
+        <form id="schedForm" method="POST" action="{{ url_for('schedule.add_schedule') }}">
+            <input type="hidden" name="id" id="schedId">
+
+            <label>Subject:
+                <input name="subject" id="subject" required>
+            </label>
+
+            <label>Days:
+                <input name="days" id="days">
+            </label>
+
+            <label>Time:
+                <input name="time" id="time" type="time" step="60">
+            </label>
+
+            <label>Semester:
+                <input name="semester" id="semester" placeholder="1st Semester">
+            </label>
+
+            <label>Academic Year:
+                <select name="academic_year" id="academic_year">
+                    <option value="">Select academic year</option>
+                    <option value="2023-2024">2023-2024</option>
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="2025-2026">2025-2026</option>
+                    <option value="2026-2027">2026-2027</option>
+                    <option value="2027-2028">2027-2028</option>
+                </select>
+            </label>
+
+            <label>
+                <input type="checkbox" name="alarm_enabled" id="alarm_enabled"> Alarm enabled
+            </label>
+
+            <label>Alarm offset minutes:
+                <input name="alarm_offset" id="alarm_offset" type="number" value="30">
+            </label>
+
+            <label>Custom alarm time:
+                <input name="custom_alarm_time" id="custom_alarm_time" type="time" step="60">
+            </label>
+
+            <div class="modal-actions">
+                <button type="submit">Save</button>
+                <button type="button" id="cancelModal">Cancel</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<!-- ========================= -->
+<!-- JAVASCRIPT (MUST BE HERE) -->
+<!-- ========================= -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("Schedule page JavaScript loaded");
+
+    const toTimeValue = (str) => {
+        if (!str) return "";
+        const trimmed = str.trim();
+        const match12 = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (match12) {
+            let [_, h, m, ap] = match12;
+            let hour = parseInt(h, 10);
+            if (ap.toUpperCase() === "PM" && hour !== 12) hour += 12;
+            if (ap.toUpperCase() === "AM" && hour === 12) hour = 0;
+            return `${hour.toString().padStart(2, "0")}:${m}`;
+        }
+        const match24 = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+        if (match24) {
+            const hour = match24[1].padStart(2, "0");
+            return `${hour}:${match24[2]}`;
+        }
+        return "";
+    };
+
+    const modal = document.getElementById("modal");
+    const addBtn = document.getElementById("addBtn");
+    const cancelModal = document.getElementById("cancelModal");
+    const schedForm = document.getElementById("schedForm");
+
+    // Debug logging
+    console.log("Modal element:", modal);
+    console.log("Add button:", addBtn);
+    console.log("Cancel button:", cancelModal);
+    console.log("Form element:", schedForm);
+
+    if (!modal || !addBtn || !cancelModal || !schedForm) {
+        console.error("Missing required elements!");
+        return;
+    }
+
+    // Add Class button handler
+    addBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Add button clicked");
+        
+        document.getElementById("modalTitle").innerText = "Add Class";
+        schedForm.action = "{{ url_for('schedule.add_schedule') }}";
+
+        document.getElementById("schedId").value = "";
+        document.getElementById("subject").value = "";
+        document.getElementById("days").value = "";
+        document.getElementById("time").value = "";
+        document.getElementById("semester").value = "";
+        document.getElementById("academic_year").value = "";
+        document.getElementById("alarm_enabled").checked = true;
+        document.getElementById("alarm_offset").value = 30;
+        document.getElementById("custom_alarm_time").value = "";
+
+        modal.style.display = "flex";
+        console.log("Modal opened for adding");
+    });
+
+    // Cancel button handler
+    cancelModal.addEventListener("click", (e) => {
+        e.preventDefault();
+        console.log("Cancel clicked");
+        modal.style.display = "none";
+    });
+
+    // Edit buttons handler
+    const editButtons = document.querySelectorAll(".editBtn");
+    console.log("Found edit buttons:", editButtons.length);
+    
+    editButtons.forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Edit button clicked for ID:", btn.dataset.id);
+
+            document.getElementById("modalTitle").innerText = "Edit Class";
+
+            const id = btn.dataset.id;
+            schedForm.action = `/schedule/edit/${id}`;
+
+            document.getElementById("schedId").value = id;
+            document.getElementById("subject").value = btn.dataset.subject || "";
+            document.getElementById("days").value = btn.dataset.days || "";
+            document.getElementById("time").value = toTimeValue(btn.dataset.time);
+            document.getElementById("semester").value = btn.dataset.semester || "";
+            document.getElementById("academic_year").value = btn.dataset.year || "";
+            document.getElementById("alarm_enabled").checked = btn.dataset.alarm === "1";
+            document.getElementById("alarm_offset").value = btn.dataset.offset || 30;
+            document.getElementById("custom_alarm_time").value = toTimeValue(btn.dataset.custom);
+
+            modal.style.display = "flex";
+            console.log("Modal opened for editing");
+        });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            console.log("Clicked outside modal");
+            modal.style.display = "none";
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modal.style.display === "flex") {
+            console.log("Escape pressed");
+            modal.style.display = "none";
+        }
+    });
+});
+</script>
+{% endblock %}

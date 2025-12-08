@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Home - ClassAlert{% endblock %}
+
+{% block content %}
+
+<div class="card">
+  <h2>Welcome, {{ current_user.username }} 👋</h2>
+  <p style="color:#666; margin-top:6px">Quick actions — tap a tile to open.</p>
+
+  <div style="height:18px"></div>
+
+  <div class="tiles">
+    <a class="tile" href="{{ url_for('notifications.view_notifications') }}">
+      <div class="icon"><i class="ri-notification-2-line"></i></div>
+      <h3>Notifications</h3>
+      <p>See upcoming class reminders and alerts.</p>
+    </a>
+
+    <a class="tile" href="{{ url_for('upload.upload_page') }}">
+      <div class="icon"><i class="ri-upload-cloud-line"></i></div>
+      <h3>Upload COR</h3>
+      <p>Upload your COR PDF to import schedule entries.</p>
+    </a>
+
+    <a class="tile" href="{{ url_for('schedule.view_schedules') }}">
+      <div class="icon"><i class="ri-calendar-check-line"></i></div>
+      <h3>My Schedule</h3>
+      <p>View your current semester schedule.</p>
+    </a>
+
+    <a class="tile" href="{{ url_for('dashboard.cor_history') }}">
+      <div class="icon"><i class="ri-time-line"></i></div>
+      <h3>COR History</h3>
+      <p>Access previously uploaded schedules by semester.</p>
+    </a>
+  </div>
+</div>
+
+{% endblock %}

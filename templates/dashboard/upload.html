@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Upload COR - ClassAlert{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('dashboard.home') }}" class="back-btn">← Back</a>
+
+<div class="upload-card">
+  <h2>📤 Upload Certificate of Registration</h2>
+  <p>Choose your COR PDF file.</p>
+
+  <form action="{{ url_for('upload.upload_file') }}" method="POST" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".pdf" required>
+      <br><br>
+      <button type="submit">Upload</button>
+  </form>
+
+  <hr style="margin: 30px 0;">
+
+  <h3>📁 Uploaded Files</h3>
+
+  {% if files %}
+      <ul style="list-style:none; padding:0;">
+          {% for f in files %}
+          <li style="background:#f1f3f7; margin:10px 0; padding:12px; border-radius:8px; display:flex; justify-content:space-between;">
+              <span><i class="ri-file-line"></i> {{ f }}</span>
+              <a href="{{ url_for('upload.uploaded_file', filename=f) }}" style="text-decoration:none; color:#2575fc;">Download</a>
+          </li>
+          {% endfor %}
+      </ul>
+  {% else %}
+      <p style="color:#888;">No files uploaded yet.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

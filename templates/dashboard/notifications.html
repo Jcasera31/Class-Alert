@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Notifications - ClassAlert{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('dashboard.home') }}" class="back-btn">← Back</a>
+
+<h2>🔔 Notifications</h2>
+
+<div class="container">
+    {% if notifications %}
+        {% for note in notifications %}
+        <div class="notification">
+            <p>{{ note.message }}</p>
+            <small>{{ note.timestamp }}</small>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="no-alerts">No notifications yet.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

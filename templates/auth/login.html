@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% set hide_navbar = true %}
+{% block title %}Login - ClassAlert{% endblock %}
+{% block content %}
+
+<!-- Alert/Popup Modal -->
+<div id="alertModal" class="alert-modal">
+  <div class="alert-modal-content">
+    <button class="alert-close" onclick="closeAlert()">&times;</button>
+    <div id="alertIcon" class="alert-icon"></div>
+    <h2 id="alertTitle"></h2>
+    <p id="alertMessage"></p>
+    <button class="alert-btn" onclick="closeAlert()">OK</button>
+  </div>
+</div>
+
+<div class="auth-container login">
+  <h1>Login</h1>
+  
+  <!-- Google Login Button -->
+  <a href="{{ url_for('auth.google_login') }}" class="google-login-btn">
+    <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      <path fill="none" d="M0 0h48v48H0z"/>
+    </svg>
+    Continue with Google
+  </a>
+
+  <div class="divider">
+    <span>OR</span>
+  </div>
+
+  <!-- Traditional Email/Password Login -->
+  <form method="POST">
+    <input type="text" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+  <div class="auth-link">
+    Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>
+  </div>
+</div>
+
+<style>
+.google-login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.google-login-btn:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  color: rgba(255,255,255,0.8);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+}
+
+.divider span {
+  padding: 0 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Alert Modal Styles */
+.alert-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+
+.alert-modal.show {
+  display: flex;
+}
+
+.alert-modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.alert-close:hover {
+  color: #333;
+}
+
+.alert-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-modal-content h2 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.alert-modal-content p {
+  margin: 0 0 30px 0;
+  color: #666;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.alert-btn {
+  background: linear-gradient(135deg, #5b4bff, #8a4dff);
+  color: white;
+  border: none;
+  padding: 12px 40px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.alert-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(91, 75, 255, 0.4);
+}
+
+.alert-btn:active {
+  transform: translateY(0);
+}
+
+/* Alert type specific styling */
+.alert-modal-content.success .alert-icon {
+  color: #4CAF50;
+}
+
+.alert-modal-content.error .alert-icon {
+  color: #f44336;
+}
+
+.alert-modal-content.warning .alert-icon {
+  color: #ff9800;
+}
+
+.alert-modal-content.info .alert-icon {
+  color: #2196F3;
+}
+</style>
+
+<script>
+function showAlert(title, message, type = 'info') {
+  const modal = document.getElementById('alertModal');
+  const alertContent = document.querySelector('.alert-modal-content');
+  const icon = document.getElementById('alertIcon');
+  const titleEl = document.getElementById('alertTitle');
+  const messageEl = document.getElementById('alertMessage');
+
+  // Set content
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+
+  // Set icon and type styling
+  alertContent.className = 'alert-modal-content ' + type;
+  switch(type) {
+    case 'success':
+      icon.innerHTML = '✓';
+      break;
+    case 'error':
+    case 'danger':
+      icon.innerHTML = '✕';
+      break;
+    case 'warning':
+      icon.innerHTML = '⚠';
+      break;
+    default:
+      icon.innerHTML = 'ℹ';
+  }
+
+  // Show modal
+  modal.classList.add('show');
+}
+
+function closeAlert() {
+  document.getElementById('alertModal').classList.remove('show');
+}
+
+// Check for flashed messages on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const flashes = {{ get_flashed_messages(with_categories=True)|tojson }};
+  if (flashes && flashes.length > 0) {
+    const [category, message] = flashes[0];
+    let title = '';
+    
+    if (category === 'success') {
+      title = 'Success!';
+    } else if (category === 'danger') {
+      title = 'Error!';
+    } else if (category === 'warning') {
+      title = 'Warning!';
+    } else {
+      title = 'Information';
+    }
+    
+    showAlert(title, message, category);
+  }
+});
+</script>
+{% endblock %}

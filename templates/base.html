@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}ClassAlert{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-icon">
+        <i class="ri-notification-3-line"></i>
+      </div>
+      <h2 class="loading-title">ClassAlert</h2>
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+      </div>
+      <p class="loading-text">Loading your schedule...</p>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-left">
+      <div class="logo">📘 <span class="logo-text">ClassAlert</span></div>
+    </div>
+
+    <!-- show menu only when user is logged in -->
+    {% if current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
+    <!-- Toggle Menu -->
+    <div class="header-right">
+      <div class="menu-container">
+        <button id="menu-toggle" class="menu-btn">
+          <i class="ri-menu-line"></i>
+        </button>
+
+        <div id="menu-dropdown" class="menu-dropdown">
+          <a href="{{ url_for('settings.view_settings') }}" class="dropdown-item"><i class="ri-settings-3-line"></i> Settings</a>
+          <a href="{{ url_for('auth.logout') }}" class="dropdown-item"><i class="ri-logout-box-r-line"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+{% endif %}
+
+  </header>
+
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // Loading screen handler
+    window.addEventListener('load', function() {
+      const loadingScreen = document.getElementById('loading-screen');
+      setTimeout(() => {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 500);
+      }, 800); // Show for at least 800ms
+    });
+
+    // Dropdown toggle behaviour
+    (function(){
+      const toggle = document.getElementById('menu-toggle');
+      const drop = document.getElementById('menu-dropdown');
+
+      if (!toggle || !drop) return;
+
+      function closeMenu() {
+        drop.classList.remove('open');
+        toggle.setAttribute('aria-expanded','false');
+        drop.setAttribute('aria-hidden','true');
+      }
+
+      function openMenu() {
+        drop.classList.add('open');
+        toggle.setAttribute('aria-expanded','true');
+        drop.setAttribute('aria-hidden','false');
+      }
+
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        drop.classList.toggle('open');
+        const open = drop.classList.contains('open');
+        toggle.setAttribute('aria-expanded', String(open));
+        drop.setAttribute('aria-hidden', String(!open));
+      });
+
+      // close when clicking outside
+      document.addEventListener('click', (ev) => {
+        if (!drop.classList.contains('open')) return;
+        if (!drop.contains(ev.target) && ev.target !== toggle) closeMenu();
+      });
+
+      // close on Esc
+      document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape') closeMenu();
+      });
+    })();
+  </script>
+</body>
+</html>
+<style>
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #2575fc;
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 20px;
+    transition: 0.3s;
+}
+
+.back-btn:hover {
+    background: #1a5fd1;
+    transform: translateX(-2px);
+}
+
+.back-btn i {
+    font-size: 1.2rem;
+}
+</style>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const currentUserId = {{ current_user.id if current_user.is_authenticated else 'null' }};
+
+  // Create an audio element for alarm sound
+  const alarmSound = new Audio('{{ url_for("static", filename="audio/alert-444816.mp3") }}');
+
+  socket.on("new_notification", data => {
+    // data = { user_id, message }
+    if (!currentUserId) return;
+    if (data.user_id != currentUserId) return; // deliver only to intended user
+
+    // Show in-page toast
+    showToast(data.message);
+
+    // Play sound
+    alarmSound.currentTime = 0;
+    alarmSound.play().catch(e => { /* autoplay restrictions: user gesture needed */ });
+
+    // Browser notification
+    if (("Notification" in window) && Notification.permission === "granted") {
+      new Notification("ClassAlert Reminder", { body: data.message });
+    } else if (("Notification" in window) && Notification.permission !== "denied") {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification("ClassAlert Reminder", { body: data.message });
+        }
+      });
+    }
+  });
+
+  function showToast(txt) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerText = txt;
+    Object.assign(t.style, {position:'fixed', right:'20px', bottom:'20px', background:'#2575fc', color:'white', padding:'12px 16px', borderRadius:'8px', zIndex:9999});
+    document.body.appendChild(t);
+    setTimeout(()=> t.style.opacity = 1, 50);
+    setTimeout(()=> t.remove(), 7000);
+  }
+</script>
+
+{% block scripts %}{% endblock %}
+
