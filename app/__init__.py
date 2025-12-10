@@ -77,9 +77,14 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
 
-    # Start the background scheduler for notifications
-    from app.scheduler import start_scheduler, stop_scheduler
-    start_scheduler(app, socketio)
-    atexit.register(stop_scheduler)
+    # Start the background scheduler for notifications (only in local/development)
+    # Vercel serverless doesn't support background threads
+    if not os.getenv('VERCEL'):
+        try:
+            from app.scheduler import start_scheduler, stop_scheduler
+            start_scheduler(app, socketio)
+            atexit.register(stop_scheduler)
+        except Exception as e:
+            print(f"Warning: Could not start scheduler: {e}")
 
     return app
