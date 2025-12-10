@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_socketio import SocketIO
@@ -28,7 +28,16 @@ def create_app(config_class=Config):
     # Health check endpoint for Vercel
     @app.route('/api/health')
     def health():
-        return jsonify({"status": "ok"}), 200
+        return jsonify({"status": "ok", "environment": "vercel" if os.getenv('VERCEL') else "local"}), 200
+
+    # Simple info endpoint
+    @app.route('/api/info')
+    def info():
+        return jsonify({
+            "app": "ClassAlert",
+            "version": "1.0.0",
+            "environment": "vercel" if os.getenv('VERCEL') else "local"
+        }), 200
 
     # Relaxed CSP to allow Stagewise proxy/devtools and websocket connections
     @app.after_request
