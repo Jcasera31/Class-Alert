@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.dashboard import bp
 from app.models import Schedule
 from sqlalchemy import distinct
+import os
 
 
 @bp.route('/')
@@ -11,6 +12,17 @@ from sqlalchemy import distinct
 def home():
     """Dashboard home page"""
     return render_template('dashboard/home.html')
+
+
+@bp.route('/demo')
+def demo():
+    """Public demo page showing the UI design (Vercel-only)"""
+    # Only show demo on Vercel
+    if not os.getenv('VERCEL'):
+        return redirect(url_for('dashboard.home'))
+    
+    # Show demo dashboard without requiring login
+    return render_template('dashboard/home.html', is_demo=True)
 
 
 @bp.route('/cor-history')

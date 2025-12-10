@@ -3,12 +3,52 @@
 
 {% block content %}
 
+{% if is_demo %}
+<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+  <strong style="color: #856404; display: block; margin-bottom: 5px;">⚠️ Demo Mode</strong>
+  <span style="color: #856404; font-size: 0.95em;">You're viewing the UI design. These buttons are not functional in demo mode. To use the full app, run locally.</span>
+</div>
+{% endif %}
+
 <div class="welcome-card">
-  <h2>Welcome, {{ current_user.username }} 👋</h2>
+  <h2>Welcome, {% if is_demo %}Guest{% else %}{{ current_user.username }}{% endif %} 👋</h2>
   <p class="welcome-subtitle">Quick actions — tap a tile to open.</p>
 </div>
 
 <div class="action-grid">
+  {% if is_demo %}
+  <div class="action-card notifications-card">
+    <div class="card-icon">
+      <i class="ri-notification-badge-line"></i>
+    </div>
+    <h3>Notifications</h3>
+    <p>See upcoming class reminders and alerts.</p>
+  </div>
+
+  <div class="action-card upload-card">
+    <div class="card-icon">
+      <i class="ri-file-upload-line"></i>
+    </div>
+    <h3>Upload COR</h3>
+    <p>Upload your COR PDF to import schedule entries.</p>
+  </div>
+
+  <div class="action-card schedule-card">
+    <div class="card-icon">
+      <i class="ri-calendar-check-fill"></i>
+    </div>
+    <h3>My Schedule</h3>
+    <p>View your current semester schedule.</p>
+  </div>
+
+  <div class="action-card history-card">
+    <div class="card-icon">
+      <i class="ri-history-line"></i>
+    </div>
+    <h3>COR History</h3>
+    <p>Access previously uploaded schedules by semester.</p>
+  </div>
+  {% else %}
   <a class="action-card notifications-card" href="{{ url_for('notifications.view_notifications') }}">
     <div class="card-icon">
       <i class="ri-notification-badge-line"></i>
@@ -40,6 +80,7 @@
     <h3>COR History</h3>
     <p>Access previously uploaded schedules by semester.</p>
   </a>
+  {% endif %}
 </div>
 
 <style>

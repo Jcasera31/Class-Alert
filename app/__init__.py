@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_socketio import SocketIO
@@ -24,6 +24,20 @@ def create_app(config_class=Config):
                 template_folder=template_dir,
                 static_folder=static_dir)
     app.config.from_object(config_class)
+
+    # Root landing page
+    @app.route('/')
+    def index():
+        """Root page - show demo or redirect to login"""
+        if os.getenv('VERCEL'):
+            # On Vercel, show demo landing page
+            return render_template('landing.html')
+        else:
+            # Locally, redirect to dashboard or login
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                return redirect('dashboard.home')
+            return redirect('auth.login')
 
     # Health check endpoint for Vercel
     @app.route('/api/health')
