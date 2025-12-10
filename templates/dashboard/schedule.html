@@ -3,7 +3,9 @@
 
 {% block content %}
 
-<a href="{{ url_for('dashboard.home') }}" class="back-btn">← Back</a>
+<a href="{{ url_for('dashboard.home') }}" class="back-btn">
+    <i class="ri-arrow-left-line"></i> Back
+</a>
 
 <div class="card">
     <div class="schedule-header">
@@ -58,8 +60,8 @@
                 <td>{{ s.subject }}</td>
                 <td>{{ s.days }}</td>
                 <td>{{ s.time }}</td>
-                <td>{{ s.semester }}</td>
-                <td>{{ s.academic_year }}</td>
+                <td><span class="semester-badge">{{ s.semester }}</span></td>
+                <td><span class="year-badge">{{ s.academic_year }}</span></td>
                 <td>{{ "On" if s.alarm_enabled else "Off" }} ({{ s.alarm_offset_minutes }}m)</td>
                 <td class="actions-cell">
                     <button class="editBtn"
@@ -101,21 +103,43 @@
                 <input name="subject" id="subject" required>
             </label>
 
-            <label>Days:
-                <input name="days" id="days">
-            </label>
+            <label>Days:</label>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;" id="daysGroup">
+                {% set day_options = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                {% for d in day_options %}
+                <label style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" name="days" value="{{ d }}" class="day-checkbox"> {{ d }}
+                </label>
+                {% endfor %}
+            </div>
 
             <label>Time:
-                <input name="time" id="time" type="time" step="60">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div>
+                        <small>Start</small>
+                        <input type="time" id="timeStart" step="1800" required>
+                    </div>
+                    <div>
+                        <small>End</small>
+                        <input type="time" id="timeEnd" step="1800" required>
+                    </div>
+                </div>
+                <input type="hidden" name="time" id="timeHidden" value="">
             </label>
 
             <label>Semester:
-                <input name="semester" id="semester" placeholder="1st Semester">
+                <select name="semester" id="semester" required>
+                    <option value="">Select semester</option>
+                    <option value="1st Semester">1st Semester</option>
+                    <option value="2nd Semester">2nd Semester</option>
+                    <option value="Summer">Summer</option>
+                    <option value="Midyear">Midyear</option>
+                </select>
             </label>
 
             <label>Academic Year:
                 <select name="academic_year" id="academic_year">
-                    <option value="">Select academic year</option>
+                    <option value="">Auto (based on current date)</option>
                     <option value="2023-2024">2023-2024</option>
                     <option value="2024-2025">2024-2025</option>
                     <option value="2025-2026">2025-2026</option>
@@ -156,29 +180,40 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Schedule page JavaScript loaded");
 
-    const toTimeValue = (str) => {
-        if (!str) return "";
-        const trimmed = str.trim();
-        const match12 = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (match12) {
-            let [_, h, m, ap] = match12;
-            let hour = parseInt(h, 10);
-            if (ap.toUpperCase() === "PM" && hour !== 12) hour += 12;
-            if (ap.toUpperCase() === "AM" && hour === 12) hour = 0;
-            return `${hour.toString().padStart(2, "0")}:${m}`;
-        }
-        const match24 = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-        if (match24) {
-            const hour = match24[1].padStart(2, "0");
-            return `${hour}:${match24[2]}`;
-        }
-        return "";
-    };
-
     const modal = document.getElementById("modal");
     const addBtn = document.getElementById("addBtn");
     const cancelModal = document.getElementById("cancelModal");
     const schedForm = document.getElementById("schedForm");
+    const dayCheckboxes = Array.from(document.querySelectorAll('.day-checkbox'));
+    const timeStart = document.getElementById('timeStart');
+    const timeEnd = document.getElementById('timeEnd');
+    const timeHidden = document.getElementById('timeHidden');
+
+    // Build time options from 7:00 AM to 9:00 PM in 30-minute increments, with 60m and 90m durations
+    const toLabel = (val) => {
+        if (!val) return '';
+        const [h, m] = val.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = ((h + 11) % 12) + 1;
+        return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
+    };
+
+    const setHiddenTime = () => {
+        if (!timeStart || !timeEnd || !timeHidden) return;
+        if (!timeStart.value || !timeEnd.value) {
+            timeHidden.value = '';
+            return;
+        }
+        // ensure end after start
+        if (timeEnd.value <= timeStart.value) {
+            timeHidden.value = '';
+            return;
+        }
+        timeHidden.value = `${toLabel(timeStart.value)} - ${toLabel(timeEnd.value)}`;
+    };
+
+    if (timeStart) timeStart.addEventListener('change', setHiddenTime);
+    if (timeEnd) timeEnd.addEventListener('change', setHiddenTime);
 
     // Debug logging
     console.log("Modal element:", modal);
@@ -202,8 +237,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.getElementById("schedId").value = "";
         document.getElementById("subject").value = "";
-        document.getElementById("days").value = "";
-        document.getElementById("time").value = "";
+        dayCheckboxes.forEach(cb => cb.checked = false);
+        if (timeStart) timeStart.value = "";
+        if (timeEnd) timeEnd.value = "";
+        if (timeHidden) timeHidden.value = "";
         document.getElementById("semester").value = "";
         document.getElementById("academic_year").value = "";
         document.getElementById("alarm_enabled").checked = true;
@@ -238,17 +275,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
             document.getElementById("schedId").value = id;
             document.getElementById("subject").value = btn.dataset.subject || "";
-            document.getElementById("days").value = btn.dataset.days || "";
-            document.getElementById("time").value = toTimeValue(btn.dataset.time);
+            const existingDays = (btn.dataset.days || '').split(',').map(d => d.trim().toLowerCase());
+            dayCheckboxes.forEach(cb => {
+                cb.checked = existingDays.includes(cb.value.toLowerCase());
+            });
+            const existingTime = btn.dataset.time || "";
+            const match = existingTime.match(/^(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)$/i);
+            const to24 = (s) => {
+                if (!s) return '';
+                const parts = s.trim().toUpperCase().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/);
+                if (!parts) return '';
+                let h = parseInt(parts[1], 10);
+                const m = parts[2];
+                const ap = parts[3];
+                if (ap === 'PM' && h !== 12) h += 12;
+                if (ap === 'AM' && h === 12) h = 0;
+                return `${h.toString().padStart(2,'0')}:${m}`;
+            };
+            if (match) {
+                const start = to24(match[1]);
+                const end = to24(match[2]);
+                if (timeStart) timeStart.value = start;
+                if (timeEnd) timeEnd.value = end;
+                setHiddenTime();
+            } else {
+                if (timeStart) timeStart.value = '';
+                if (timeEnd) timeEnd.value = '';
+                if (timeHidden) timeHidden.value = existingTime; // fallback raw
+            }
             document.getElementById("semester").value = btn.dataset.semester || "";
             document.getElementById("academic_year").value = btn.dataset.year || "";
             document.getElementById("alarm_enabled").checked = btn.dataset.alarm === "1";
             document.getElementById("alarm_offset").value = btn.dataset.offset || 30;
-            document.getElementById("custom_alarm_time").value = toTimeValue(btn.dataset.custom);
+            document.getElementById("custom_alarm_time").value = btn.dataset.custom || "";
 
             modal.style.display = "flex";
             console.log("Modal opened for editing");
         });
+    });
+
+    // Ensure timeHidden has a value before submit
+    schedForm.addEventListener('submit', (e) => {
+        setHiddenTime();
+        if (!timeHidden || !timeHidden.value) {
+            e.preventDefault();
+            alert('Please choose a valid start and end time (end must be after start).');
+        }
     });
 
     // Close modal when clicking outside

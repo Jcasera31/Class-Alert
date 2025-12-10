@@ -3,7 +3,8 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.upload import bp
 from app import db
-from app.models import UploadedFile
+from app.models import UploadedFile, Schedule
+from app.utils.pdf_parser import parse_cor_pdf
 import os
 
 
@@ -33,7 +34,7 @@ def upload_page():
 @bp.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
-    """Handle file upload"""
+    """Handle file upload and automatically extract schedule data"""
     if 'file' not in request.files:
         flash('No file selected.', 'danger')
         return redirect(url_for('upload.upload_page'))
@@ -77,7 +78,77 @@ def upload_file():
     db.session.add(uploaded_file)
     db.session.commit()
     
-    flash(f'File "{filename}" uploaded successfully!', 'success')
+    # Parse PDF and extract schedule data
+    try:
+        schedules = parse_cor_pdf(filepath)
+        
+        if schedules:
+            added_count = 0
+            for sched_data in schedules:
+                # Check if schedule already exists
+                existing = Schedule.query.filter_by(
+                    user_id=current_user.id,
+                    subject=sched_data['subject'],
+                    days=sched_data['days'],
+                    time=sched_data['time']
+                ).first()
+                
+                if not existing:
+                    # Create new schedule entry
+                    schedule = Schedule(
+                        user_id=current_user.id,
+                        subject=sched_data['subject'],
+                        days=sched_data['days'],
+                        time=sched_data['time'],
+                        semester=sched_data.get('semester', ''),
+                        academic_year=sched_data.get('academic_year', ''),
+                        alarm_enabled=True,
+                        alarm_offset_minutes=30
+                    )
+                    db.session.add(schedule)
+                    added_count += 1
+            
+            db.session.commit()
+            
+            flash(f'File "{filename}" uploaded successfully! {added_count} schedule(s) extracted and added.', 'success')
+            return redirect(url_for('schedule.view_schedules'))
+        else:
+            flash(f'File "{filename}" uploaded but no schedule data could be extracted. Please check the PDF format.', 'warning')
+            return redirect(url_for('schedule.view_schedules'))
+    
+    except Exception as e:
+        flash(f'File "{filename}" uploaded but PDF parsing failed: {str(e)}', 'warning')
+        print(f"PDF parsing error: {e}")
+        return redirect(url_for('schedule.view_schedules'))
+
+
+@bp.route('/delete/<filename>', methods=['POST'])
+@login_required
+def delete_file(filename):
+    """Delete an uploaded file"""
+    # Get the file record from database
+    uploaded_file = UploadedFile.query.filter_by(
+        user_id=current_user.id,
+        filename=filename
+    ).first()
+    
+    if not uploaded_file:
+        flash('File not found.', 'danger')
+        return redirect(url_for('upload.upload_page'))
+    
+    # Delete file from filesystem
+    try:
+        if os.path.exists(uploaded_file.filepath):
+            os.remove(uploaded_file.filepath)
+    except Exception as e:
+        flash(f'Error deleting file: {str(e)}', 'danger')
+        return redirect(url_for('upload.upload_page'))
+    
+    # Delete record from database
+    db.session.delete(uploaded_file)
+    db.session.commit()
+    
+    flash(f'File "{filename}" deleted successfully.', 'success')
     return redirect(url_for('upload.upload_page'))
 
 

@@ -1,9 +1,20 @@
 from flask import render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
+from datetime import datetime
 from app.schedule import bp
 from app import db
 from app.models import Schedule
 from sqlalchemy import distinct
+
+
+def current_academic_year():
+    """Return academic year based on today's date (AY starts in August)."""
+    today = datetime.today()
+    year = today.year
+    start_month = 8  # August
+    if today.month >= start_month:
+        return f"{year}-{year + 1}"
+    return f"{year - 1}-{year}"
 
 
 @bp.route('/')
@@ -56,10 +67,13 @@ def view_schedules():
 def add_schedule():
     """Add a new class schedule"""
     subject = request.form.get('subject', '').strip()
-    days = request.form.get('days', '').strip()
+    days_selected = request.form.getlist('days')
+    days = ', '.join([d.strip() for d in days_selected if d.strip()])
     time = request.form.get('time', '').strip()
     semester = request.form.get('semester', '').strip()
     academic_year = request.form.get('academic_year', '').strip()
+    if not academic_year:
+        academic_year = current_academic_year()
     
     alarm_enabled = request.form.get('alarm_enabled') == 'on'
     alarm_offset = request.form.get('alarm_offset', '30')
@@ -102,10 +116,12 @@ def edit_schedule(schedule_id):
     schedule = Schedule.query.filter_by(id=schedule_id, user_id=current_user.id).first_or_404()
     
     schedule.subject = request.form.get('subject', '').strip()
-    schedule.days = request.form.get('days', '').strip()
+    days_selected = request.form.getlist('days')
+    schedule.days = ', '.join([d.strip() for d in days_selected if d.strip()])
     schedule.time = request.form.get('time', '').strip()
     schedule.semester = request.form.get('semester', '').strip()
-    schedule.academic_year = request.form.get('academic_year', '').strip()
+    academic_year = request.form.get('academic_year', '').strip()
+    schedule.academic_year = academic_year if academic_year else current_academic_year()
     
     schedule.alarm_enabled = request.form.get('alarm_enabled') == 'on'
     

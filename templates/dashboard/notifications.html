@@ -3,21 +3,281 @@
 
 {% block content %}
 
-<a href="{{ url_for('dashboard.home') }}" class="back-btn">← Back</a>
+<div class="page-header">
+    <a href="{{ url_for('dashboard.home') }}" class="back-btn">
+        <i class="ri-arrow-left-line"></i> Back
+    </a>
+    <div class="page-title">
+        <div class="title-icon"><i class="ri-notification-badge-line"></i></div>
+        <h1>Notifications</h1>
+    </div>
+    {% if notifications %}
+    <form method="POST" action="{{ url_for('notifications.clear_all_notifications') }}" style="margin-left: auto;" onsubmit="return confirm('Clear old notifications? (Upcoming alerts will be preserved)');">
+        <button type="submit" class="btn-clear-all"><i class="ri-delete-bin-line"></i> Clear All</button>
+    </form>
+    {% endif %}
+</div>
 
-<h2>🔔 Notifications</h2>
-
-<div class="container">
+<div class="notifications-container">
     {% if notifications %}
         {% for note in notifications %}
-        <div class="notification">
-            <p>{{ note.message }}</p>
-            <small>{{ note.timestamp }}</small>
+        <div class="notification-card {% if '🔔' in note.message %}warning{% elif '⏰' in note.message %}info{% endif %}">
+            <div class="notif-icon">
+                {% if '🔔' in note.message %}
+                    <i class="ri-alarm-warning-fill"></i>
+                {% elif '⏰' in note.message %}
+                    <i class="ri-time-line"></i>
+                {% else %}
+                    <i class="ri-information-line"></i>
+                {% endif %}
+            </div>
+            <div class="notif-content">
+                <p class="notif-message">{{ note.message }}</p>
+                <small class="notif-time"><i class="ri-time-line"></i> {{ note.timestamp.strftime('%b %d, %Y at %I:%M %p') }}</small>
+            </div>
+            <form method="POST" action="{{ url_for('notifications.delete_notification', notification_id=note.id) }}" class="notif-delete">
+                <button type="submit" class="btn-delete-notif" onclick="return confirm('Delete this notification?');" title="Delete">
+                    <i class="ri-close-line"></i>
+                </button>
+            </form>
         </div>
         {% endfor %}
     {% else %}
-        <p class="no-alerts">No notifications yet.</p>
+        <div class="empty-state">
+            <i class="ri-notification-off-line"></i>
+            <h3>No notifications yet</h3>
+            <p>You'll see your class reminders here</p>
+        </div>
     {% endif %}
 </div>
+
+<style>
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.page-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.title-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #ffd89b 0%, #ffa751 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 167, 81, 0.3);
+}
+
+.page-title h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #1a202c;
+    font-weight: 700;
+}
+
+.btn-clear-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+}
+
+.btn-clear-all:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
+}
+
+.notifications-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.notification-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+    border-left: 4px solid #667eea;
+}
+
+.notification-card.warning {
+    border-left-color: #ffa751;
+}
+
+.notification-card.info {
+    border-left-color: #667eea;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.notif-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.notification-card.warning .notif-icon {
+    background: linear-gradient(135deg, #ffd89b 0%, #ffa751 100%);
+    color: white;
+}
+
+.notification-card.info .notif-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.notification-card:not(.warning):not(.info) .notif-icon {
+    background: #e6f0ff;
+    color: #667eea;
+}
+
+.notif-content {
+    flex: 1;
+}
+
+.notif-message {
+    margin: 0 0 8px 0;
+    color: #1a202c;
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.notif-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #718096;
+    font-size: 0.85rem;
+}
+
+.notif-delete {
+    margin: 0;
+}
+
+.btn-delete-notif {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #fee;
+    color: #dc3545;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.btn-delete-notif:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.1);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.empty-state i {
+    font-size: 64px;
+    color: #cbd5e0;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    color: #4a5568;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: #a0aec0;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .btn-clear-all {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+
+<!-- Audio element for notification sound -->
+<audio id="notificationSound" preload="auto">
+    <source src="{{ url_for('static', filename='audio/alert-444816.mp3') }}" type="audio/mpeg">
+</audio>
+
+<script>
+// Listen for real-time notifications via SocketIO
+if (typeof io !== 'undefined') {
+    var socket = io();
+    
+    socket.on('new_notification', function(data) {
+        // Play sound
+        var audio = document.getElementById('notificationSound');
+        if (audio) {
+            audio.play().catch(function(error) {
+                console.log('Audio play failed:', error);
+            });
+        }
+        
+        // Show browser notification if permitted
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('ClassAlert', {
+                body: data.message,
+                icon: '/static/icon.png'
+            });
+        }
+    });
+    
+    // Request notification permission on page load
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+</script>
 
 {% endblock %}

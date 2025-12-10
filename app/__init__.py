@@ -5,6 +5,7 @@ from flask_socketio import SocketIO
 from flask_migrate import Migrate
 from config import Config
 import os
+import atexit
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -75,5 +76,10 @@ def create_app(config_class=Config):
     # Create database tables
     with app.app_context():
         db.create_all()
+
+    # Start the background scheduler for notifications
+    from app.scheduler import start_scheduler, stop_scheduler
+    start_scheduler(app, socketio)
+    atexit.register(stop_scheduler)
 
     return app

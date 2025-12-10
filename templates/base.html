@@ -110,24 +110,27 @@
 .back-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: #2575fc;
-    padding: 8px 14px;
-    border-radius: 8px;
-    color: white;
+    gap: 8px;
+    padding: 10px 16px;
+    background: white;
+    border-radius: 12px;
+    color: #667eea;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 20px;
-    transition: 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: none;
 }
 
 .back-btn:hover {
-    background: #1a5fd1;
-    transform: translateX(-2px);
+    transform: translateX(-4px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    color: #764ba2;
 }
 
 .back-btn i {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 </style>
 

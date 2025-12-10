@@ -3,34 +3,324 @@
 
 {% block content %}
 
-<a href="{{ url_for('dashboard.home') }}" class="back-btn">← Back</a>
-
-<div class="upload-card">
-  <h2>📤 Upload Certificate of Registration</h2>
-  <p>Choose your COR PDF file.</p>
-
-  <form action="{{ url_for('upload.upload_file') }}" method="POST" enctype="multipart/form-data">
-      <input type="file" name="file" accept=".pdf" required>
-      <br><br>
-      <button type="submit">Upload</button>
-  </form>
-
-  <hr style="margin: 30px 0;">
-
-  <h3>📁 Uploaded Files</h3>
-
-  {% if files %}
-      <ul style="list-style:none; padding:0;">
-          {% for f in files %}
-          <li style="background:#f1f3f7; margin:10px 0; padding:12px; border-radius:8px; display:flex; justify-content:space-between;">
-              <span><i class="ri-file-line"></i> {{ f }}</span>
-              <a href="{{ url_for('upload.uploaded_file', filename=f) }}" style="text-decoration:none; color:#2575fc;">Download</a>
-          </li>
-          {% endfor %}
-      </ul>
-  {% else %}
-      <p style="color:#888;">No files uploaded yet.</p>
-  {% endif %}
+<div class="page-header">
+    <a href="{{ url_for('dashboard.home') }}" class="back-btn">
+        <i class="ri-arrow-left-line"></i> Back
+    </a>
+    <div class="page-title">
+        <div class="title-icon upload-icon"><i class="ri-file-upload-line"></i></div>
+        <h1>Upload COR</h1>
+    </div>
 </div>
+
+<div class="upload-container">
+  <div class="upload-card-modern">
+    <div class="upload-icon-large">
+      <i class="ri-upload-cloud-2-line"></i>
+    </div>
+    <h2>Upload Certificate of Registration</h2>
+    <p class="upload-subtitle">Drop your COR PDF file here or click to browse</p>
+
+    <form action="{{ url_for('upload.upload_file') }}" method="POST" enctype="multipart/form-data" class="upload-form">
+        <div class="file-input-wrapper">
+            <input type="file" name="file" id="fileInput" accept=".pdf" required>
+            <label for="fileInput" class="file-input-label">
+                <i class="ri-folder-open-line"></i>
+                <span>Choose PDF File</span>
+            </label>
+        </div>
+        <button type="submit" class="btn-upload"><i class="ri-upload-2-line"></i> Upload COR</button>
+    </form>
+  </div>
+
+  <div class="files-section">
+    <div class="section-header">
+        <h3><i class="ri-folder-3-line"></i> Your Uploaded Files</h3>
+    </div>
+
+    {% if files %}
+        <div class="files-grid">
+            {% for f in files %}
+            <div class="file-card">
+                <div class="file-icon">
+                    <i class="ri-file-pdf-line"></i>
+                </div>
+                <div class="file-info">
+                    <p class="file-name">{{ f }}</p>
+                </div>
+                <div class="file-actions">
+                    <a href="{{ url_for('upload.uploaded_file', filename=f) }}" class="btn-file-action download" title="Download">
+                        <i class="ri-download-line"></i>
+                    </a>
+                    <form action="{{ url_for('upload.delete_file', filename=f) }}" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Delete this file?');">
+                        <button type="submit" class="btn-file-action delete" title="Delete">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-files">
+            <i class="ri-folder-open-line"></i>
+            <p>No files uploaded yet</p>
+        </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.upload-icon {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%) !important;
+    color: #667eea !important;
+}
+
+.upload-container {
+    display: grid;
+    gap: 30px;
+}
+
+.upload-card-modern {
+    background: white;
+    border-radius: 20px;
+    padding: 50px 40px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 2px dashed #e0e7ff;
+    transition: all 0.3s ease;
+}
+
+.upload-card-modern:hover {
+    border-color: #667eea;
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+}
+
+.upload-icon-large {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #667eea;
+    box-shadow: 0 4px 20px rgba(168, 237, 234, 0.3);
+}
+
+.upload-card-modern h2 {
+    color: #1a202c;
+    margin-bottom: 10px;
+    font-size: 1.6rem;
+}
+
+.upload-subtitle {
+    color: #718096;
+    margin-bottom: 30px;
+}
+
+.upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.file-input-wrapper {
+    position: relative;
+}
+
+.file-input-wrapper input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.file-input-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 24px;
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.file-input-label:hover {
+    background: #edf2f7;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.file-input-label i {
+    font-size: 20px;
+}
+
+.btn-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-upload:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+}
+
+.files-section {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.section-header {
+    margin-bottom: 24px;
+}
+
+.section-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #1a202c;
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.section-header h3 i {
+    color: #667eea;
+}
+
+.files-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.file-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #f7fafc;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.file-card:hover {
+    background: #edf2f7;
+    transform: translateX(4px);
+}
+
+.file-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.file-info {
+    flex: 1;
+}
+
+.file-name {
+    margin: 0;
+    color: #2d3748;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-file-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-file-action.download {
+    background: #e6f0ff;
+    color: #667eea;
+}
+
+.btn-file-action.download:hover {
+    background: #667eea;
+    color: white;
+}
+
+.btn-file-action.delete {
+    background: #fee;
+    color: #dc3545;
+}
+
+.btn-file-action.delete:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.empty-files {
+    text-align: center;
+    padding: 60px 20px;
+    color: #a0aec0;
+}
+
+.empty-files i {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .upload-card-modern {
+        padding: 30px 20px;
+    }
+    
+    .file-card {
+        flex-wrap: wrap;
+    }
+    
+    .file-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+</style>
 
 {% endblock %}

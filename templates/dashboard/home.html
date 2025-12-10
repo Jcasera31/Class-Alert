@@ -3,37 +3,179 @@
 
 {% block content %}
 
-<div class="card">
+<div class="welcome-card">
   <h2>Welcome, {{ current_user.username }} 👋</h2>
-  <p style="color:#666; margin-top:6px">Quick actions — tap a tile to open.</p>
-
-  <div style="height:18px"></div>
-
-  <div class="tiles">
-    <a class="tile" href="{{ url_for('notifications.view_notifications') }}">
-      <div class="icon"><i class="ri-notification-2-line"></i></div>
-      <h3>Notifications</h3>
-      <p>See upcoming class reminders and alerts.</p>
-    </a>
-
-    <a class="tile" href="{{ url_for('upload.upload_page') }}">
-      <div class="icon"><i class="ri-upload-cloud-line"></i></div>
-      <h3>Upload COR</h3>
-      <p>Upload your COR PDF to import schedule entries.</p>
-    </a>
-
-    <a class="tile" href="{{ url_for('schedule.view_schedules') }}">
-      <div class="icon"><i class="ri-calendar-check-line"></i></div>
-      <h3>My Schedule</h3>
-      <p>View your current semester schedule.</p>
-    </a>
-
-    <a class="tile" href="{{ url_for('dashboard.cor_history') }}">
-      <div class="icon"><i class="ri-time-line"></i></div>
-      <h3>COR History</h3>
-      <p>Access previously uploaded schedules by semester.</p>
-    </a>
-  </div>
+  <p class="welcome-subtitle">Quick actions — tap a tile to open.</p>
 </div>
+
+<div class="action-grid">
+  <a class="action-card notifications-card" href="{{ url_for('notifications.view_notifications') }}">
+    <div class="card-icon">
+      <i class="ri-notification-badge-line"></i>
+    </div>
+    <h3>Notifications</h3>
+    <p>See upcoming class reminders and alerts.</p>
+  </a>
+
+  <a class="action-card upload-card" href="{{ url_for('upload.upload_page') }}">
+    <div class="card-icon">
+      <i class="ri-file-upload-line"></i>
+    </div>
+    <h3>Upload COR</h3>
+    <p>Upload your COR PDF to import schedule entries.</p>
+  </a>
+
+  <a class="action-card schedule-card" href="{{ url_for('schedule.view_schedules') }}">
+    <div class="card-icon">
+      <i class="ri-calendar-check-fill"></i>
+    </div>
+    <h3>My Schedule</h3>
+    <p>View your current semester schedule.</p>
+  </a>
+
+  <a class="action-card history-card" href="{{ url_for('dashboard.cor_history') }}">
+    <div class="card-icon">
+      <i class="ri-history-line"></i>
+    </div>
+    <h3>COR History</h3>
+    <p>Access previously uploaded schedules by semester.</p>
+  </a>
+</div>
+
+<style>
+.welcome-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 40px 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+  color: white;
+  text-align: center;
+}
+
+.welcome-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.welcome-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 30px;
+}
+
+.action-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-decoration: none;
+  color: #333;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.action-card:hover::before {
+  transform: scaleX(1);
+}
+
+.action-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border-color: rgba(102, 126, 234, 0.2);
+}
+
+.card-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 32px;
+  transition: all 0.3s ease;
+}
+
+.notifications-card .card-icon {
+  background: linear-gradient(135deg, #ffd89b 0%, #ffa751 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(255, 167, 81, 0.3);
+}
+
+.upload-card .card-icon {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #667eea;
+  box-shadow: 0 4px 15px rgba(168, 237, 234, 0.3);
+}
+
+.schedule-card .card-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.history-card .card-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+}
+
+.action-card:hover .card-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.action-card h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1a202c;
+}
+
+.action-card p {
+  color: #718096;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .action-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .welcome-card {
+    padding: 30px 20px;
+  }
+  
+  .welcome-card h2 {
+    font-size: 1.5rem;
+  }
+}
+</style>
 
 {% endblock %}
