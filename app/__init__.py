@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_socketio import SocketIO
@@ -24,6 +24,11 @@ def create_app(config_class=Config):
                 template_folder=template_dir,
                 static_folder=static_dir)
     app.config.from_object(config_class)
+
+    # Health check endpoint for Vercel
+    @app.route('/api/health')
+    def health():
+        return jsonify({"status": "ok"}), 200
 
     # Relaxed CSP to allow Stagewise proxy/devtools and websocket connections
     @app.after_request
@@ -75,9 +80,10 @@ def create_app(config_class=Config):
     # Import models to ensure they're registered
     from app import models
 
-    # Create database tables
-    with app.app_context():
-        db.create_all()
+    # Create database tables (only if not on Vercel)
+    if not os.getenv('VERCEL'):
+        with app.app_context():
+            db.create_all()
 
     # Start the background scheduler for notifications (only in local/development)
     # Vercel serverless doesn't support background threads
