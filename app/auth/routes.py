@@ -6,12 +6,20 @@ from app.models import User
 from urllib.parse import urlencode
 import os
 
+# Check if running on Vercel (limited functionality)
+IS_VERCEL = os.getenv('VERCEL') is not None
+
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle user login"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.home'))
+    
+    # On Vercel, database operations are not supported
+    if IS_VERCEL and request.method == 'POST':
+        flash('⚠️ Demo Mode: Login is disabled on Vercel deployment. Database operations require persistent storage. Please run locally for full functionality.', 'warning')
+        return render_template('auth/login.html')
     
     if request.method == 'POST':
         email = request.form.get('email')
@@ -43,6 +51,11 @@ def register():
     """Handle user registration"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.home'))
+    
+    # On Vercel, database operations are not supported
+    if IS_VERCEL and request.method == 'POST':
+        flash('⚠️ Demo Mode: Registration is disabled on Vercel deployment. Database operations require persistent storage. Please run locally for full functionality.', 'warning')
+        return render_template('auth/register.html')
     
     if request.method == 'POST':
         username = request.form.get('username')
