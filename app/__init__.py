@@ -43,7 +43,9 @@ def create_app(config_class=Config):
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*")
+    # Only initialize socketio in non-serverless environments
+    if not os.getenv('VERCEL'):
+        socketio.init_app(app, cors_allowed_origins="*")
     migrate.init_app(app, db)
 
     # Configure login
