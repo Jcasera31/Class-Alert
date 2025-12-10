@@ -5,6 +5,8 @@ from app.schedule import bp
 from app import db
 from app.models import Schedule
 from sqlalchemy import distinct
+import threading
+from app.scheduler import check_and_send_notifications
 
 
 def current_academic_year():
@@ -104,6 +106,12 @@ def add_schedule():
     
     db.session.add(schedule)
     db.session.commit()
+
+    # Trigger immediate notification check (background) to handle near-immediate alarms
+    try:
+        threading.Thread(target=check_and_send_notifications, daemon=True).start()
+    except Exception:
+        pass
     
     flash(f'Class "{subject}" added successfully!', 'success')
     return redirect(url_for('schedule.view_schedules'))
@@ -135,6 +143,11 @@ def edit_schedule(schedule_id):
     schedule.custom_alarm_time = custom_alarm_time if custom_alarm_time else None
     
     db.session.commit()
+    # Trigger immediate notification check (background) to handle edited times that are imminent
+    try:
+        threading.Thread(target=check_and_send_notifications, daemon=True).start()
+    except Exception:
+        pass
     
     flash(f'Class "{schedule.subject}" updated successfully!', 'success')
     return redirect(url_for('schedule.view_schedules'))

@@ -8,6 +8,7 @@ Checks every minute and sends alerts at:
 
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
+import math
 
 # Global references
 _app = None
@@ -78,14 +79,14 @@ def check_and_send_notifications():
             
             # Create datetime for class start
             start_dt = datetime.combine(now.date(), start_time)
-            
-            # Calculate time difference in minutes
-            delta_minutes = (start_dt - now).total_seconds() / 60
-            
-            print(f"    ⏱️ Delta: {delta_minutes:.1f} minutes")
+
+            # Calculate time difference in seconds
+            delta_seconds = (start_dt - now).total_seconds()
+
+            print(f"    ⏱️ Delta: {delta_seconds:.1f} seconds")
             
             # Clean up notifications for this class if it's already passed by 5+ minutes
-            if delta_minutes < -5:
+            if delta_seconds < -300:  # older than 5 minutes
                 # Delete old notifications for this subject
                 Notification.query.filter(
                     Notification.user_id == sched.user_id,
@@ -95,58 +96,50 @@ def check_and_send_notifications():
                 print(f"    🗑️ Class passed, cleaned up old notifications")
                 continue
             
-            # Determine notification times based on alarm offset
-            offset = sched.alarm_offset_minutes or 30
+            # Determine notification times based on fixed offsets (in seconds)
             notification_times = []
-            
-            # Check if we should send notifications based on time windows
-            # Use wider windows to catch the notification once
+            # Standard targets: 1 hour, 30 minutes, and start
+            targets = [3600, 1800, 0]
+            # Include custom alarm offset if provided (in minutes)
+            try:
+                custom_offset = int(sched.alarm_offset_minutes) if sched.alarm_offset_minutes is not None else None
+            except Exception:
+                custom_offset = None
+            if custom_offset is not None and custom_offset not in (60, 30):
+                # convert minutes to seconds
+                targets.append(custom_offset * 60)
+
+            # Threshold is half the check interval (we will run every 5 seconds)
+            threshold = 4  # seconds
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            
-            # Always notify at class start time
-            if -1 <= delta_minutes <= 1:  # Within 1 minute of start
-                # Check if we already sent a "starting now" notification for this class at this time today
-                existing = Notification.query.filter(
-                    Notification.user_id == sched.user_id,
-                    Notification.message == f"🔔 CLASS STARTING NOW: {sched.subject} at {sched.time}",
-                    Notification.timestamp >= today_start
-                ).first()
-                
-                if not existing:
-                    notification_times.append({
-                        'message': f"🔔 CLASS STARTING NOW: {sched.subject} at {sched.time}",
-                        'type': 'warning'
-                    })
-            
-            # Notify at 30 minutes before
-            if 29 <= delta_minutes <= 31:
-                # Check if we already sent a "30 minutes" notification for this class at this time today
-                existing = Notification.query.filter(
-                    Notification.user_id == sched.user_id,
-                    Notification.message == f"⏰ Class in 30 minutes: {sched.subject} at {sched.time}",
-                    Notification.timestamp >= today_start
-                ).first()
-                
-                if not existing:
-                    notification_times.append({
-                        'message': f"⏰ Class in 30 minutes: {sched.subject} at {sched.time}",
-                        'type': 'info'
-                    })
-            
-            # Notify at 1 hour before
-            if 59 <= delta_minutes <= 61:
-                # Check if we already sent a "1 hour" notification for this class at this time today
-                existing = Notification.query.filter(
-                    Notification.user_id == sched.user_id,
-                    Notification.message == f"⏰ Class in 1 hour: {sched.subject} at {sched.time}",
-                    Notification.timestamp >= today_start
-                ).first()
-                
-                if not existing:
-                    notification_times.append({
-                        'message': f"⏰ Class in 1 hour: {sched.subject} at {sched.time}",
-                        'type': 'info'
-                    })
+
+            for t in targets:
+                # Check if delta_seconds is within threshold of target t
+                if abs(delta_seconds - t) <= threshold:
+                    # Build message depending on t
+                    if t == 0:
+                        msg = f"🔔 CLASS STARTING NOW: {sched.subject} at {sched.time}"
+                        ntype = 'warning'
+                    elif t == 1800:
+                        msg = f"⏰ Class in 30 minutes: {sched.subject} at {sched.time}"
+                        ntype = 'info'
+                    elif t == 3600:
+                        msg = f"⏰ Class in 1 hour: {sched.subject} at {sched.time}"
+                        ntype = 'info'
+                    else:
+                        mins = int(t / 60)
+                        msg = f"⏰ Class in {mins} minutes: {sched.subject} at {sched.time}"
+                        ntype = 'info'
+
+                    # Ensure we didn't already send this exact message today
+                    existing = Notification.query.filter(
+                        Notification.user_id == sched.user_id,
+                        Notification.message == msg,
+                        Notification.timestamp >= today_start
+                    ).first()
+
+                    if not existing:
+                        notification_times.append({'message': msg, 'type': ntype})
             
             # Send notifications
             for notif_data in notification_times:
@@ -166,7 +159,7 @@ def check_and_send_notifications():
                         'message': notif_data['message'],
                         'type': notif_data['type']
                     })
-                except:
+                except Exception:
                     pass  # Socket might not be connected
 
 
@@ -180,7 +173,7 @@ def start_scheduler(app, socketio):
         scheduler.add_job(
             func=check_and_send_notifications,
             trigger="interval",
-            minutes=1,  # Check every minute
+            seconds=5,  # Check every 5 seconds for alarm-like precision
             id='class_notifications',
             name='Check and send class notifications',
             replace_existing=True
