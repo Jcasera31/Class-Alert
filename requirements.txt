@@ -7,7 +7,6 @@ Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
 # SQLAlchemy 2.0.23 breaks on Python 3.13 due to TypingOnly assertion; bump to a 3.13-compatible release
 SQLAlchemy==2.0.34
-psycopg2-binary==2.9.11
 
 # Authentication
 Flask-Login==0.6.3

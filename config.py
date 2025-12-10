@@ -10,7 +10,13 @@ class Config:
     
     # Database settings
     basedir = os.path.abspath(os.path.dirname(__file__))
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'classalert.db')
+    
+    # Use in-memory SQLite on Vercel, file-based on local
+    if os.getenv('VERCEL'):
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    else:
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'classalert.db')
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Session settings
