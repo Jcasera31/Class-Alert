@@ -28,29 +28,23 @@ def create_app(config_class=Config):
     # Root landing page
     @app.route('/')
     def index():
-        """Root page - show demo or redirect to login"""
-        if os.getenv('VERCEL'):
-            # On Vercel, show demo landing page
-            return render_template('landing.html')
-        else:
-            # Locally, redirect to dashboard or login using named routes
-            from flask_login import current_user
-            if current_user.is_authenticated:
-                return redirect(url_for('dashboard.home'))
-            return redirect(url_for('auth.login'))
+        """Root page - redirect to login or dashboard"""
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard.home'))
+        return redirect(url_for('auth.login'))
 
-    # Health check endpoint for Vercel
+    # Health check endpoint
     @app.route('/api/health')
     def health():
-        return jsonify({"status": "ok", "environment": "vercel" if os.getenv('VERCEL') else "local"}), 200
+        return jsonify({"status": "ok"}), 200
 
     # Simple info endpoint
     @app.route('/api/info')
     def info():
         return jsonify({
             "app": "ClassAlert",
-            "version": "1.0.0",
-            "environment": "vercel" if os.getenv('VERCEL') else "local"
+            "version": "1.0.0"
         }), 200
 
     # Relaxed CSP to allow Stagewise proxy/devtools and websocket connections
@@ -71,9 +65,7 @@ def create_app(config_class=Config):
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
-    # Only initialize socketio in non-serverless environments
-    if not os.getenv('VERCEL'):
-        socketio.init_app(app, cors_allowed_origins="*")
+    socketio.init_app(app, cors_allowed_origins="*")
     migrate.init_app(app, db)
 
     # Configure login
@@ -111,19 +103,16 @@ def create_app(config_class=Config):
     # Import models to ensure they're registered
     from app import models
 
-    # Create database tables (only if not on Vercel)
-    if not os.getenv('VERCEL'):
-        with app.app_context():
-            db.create_all()
+    # Create database tables
+    with app.app_context():
+        db.create_all()
 
-    # Start the background scheduler for notifications (only in local/development)
-    # Vercel serverless doesn't support background threads
-    if not os.getenv('VERCEL'):
-        try:
-            from app.scheduler import start_scheduler, stop_scheduler
-            start_scheduler(app, socketio)
-            atexit.register(stop_scheduler)
-        except Exception as e:
-            print(f"Warning: Could not start scheduler: {e}")
+    # Start the background scheduler for notifications
+    try:
+        from app.scheduler import start_scheduler, stop_scheduler
+        start_scheduler(app, socketio)
+        atexit.register(stop_scheduler)
+    except Exception as e:
+        print(f"Warning: Could not start scheduler: {e}")
 
     return app

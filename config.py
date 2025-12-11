@@ -11,11 +11,8 @@ class Config:
     # Database settings
     basedir = os.path.abspath(os.path.dirname(__file__))
     
-    # Use in-memory SQLite on Vercel, file-based on local
-    if os.getenv('VERCEL'):
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    else:
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'classalert.db')
+    # Use DATABASE_URL if set (Neon production), otherwise local SQLite
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'classalert.db')
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
