@@ -38,5 +38,5 @@ eventlet>=0.36.1
 # Background scheduler
 APScheduler==3.10.4
 
-# Note: psycopg2-binary is excluded for Vercel (serverless);
-# use requirements.txt for production with persistent worker/DB
+# PostgreSQL driver
+psycopg2-binary==2.9.7
