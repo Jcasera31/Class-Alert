@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, redirect
+from flask import Flask, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_socketio import SocketIO
@@ -33,11 +33,11 @@ def create_app(config_class=Config):
             # On Vercel, show demo landing page
             return render_template('landing.html')
         else:
-            # Locally, redirect to dashboard or login
+            # Locally, redirect to dashboard or login using named routes
             from flask_login import current_user
             if current_user.is_authenticated:
-                return redirect('dashboard.home')
-            return redirect('auth.login')
+                return redirect(url_for('dashboard.home'))
+            return redirect(url_for('auth.login'))
 
     # Health check endpoint for Vercel
     @app.route('/api/health')
@@ -99,6 +99,14 @@ def create_app(config_class=Config):
 
     from app.notifications import bp as notifications_bp
     app.register_blueprint(notifications_bp, url_prefix='/notifications')
+
+    # Admin blueprint (jobs endpoint, requires authentication)
+    try:
+        from app.admin import bp as admin_bp
+        app.register_blueprint(admin_bp, url_prefix='/admin')
+    except Exception:
+        # Admin blueprint optional in some deployments
+        pass
 
     # Import models to ensure they're registered
     from app import models

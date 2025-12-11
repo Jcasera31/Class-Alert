@@ -6,7 +6,7 @@ from app import db
 from app.models import Schedule
 from sqlalchemy import distinct
 import threading
-from app.scheduler import check_and_send_notifications
+from app.scheduler import check_and_send_notifications, schedule_jobs_for_schedule, remove_jobs_for_schedule
 
 
 def current_academic_year():
@@ -107,6 +107,13 @@ def add_schedule():
     db.session.add(schedule)
     db.session.commit()
 
+    # Schedule per-occurrence jobs for this schedule (if alarms enabled)
+    try:
+        if schedule.alarm_enabled:
+            schedule_jobs_for_schedule(schedule)
+    except Exception:
+        pass
+
     # Trigger immediate notification check (background) to handle near-immediate alarms
     try:
         threading.Thread(target=check_and_send_notifications, daemon=True).start()
@@ -143,6 +150,14 @@ def edit_schedule(schedule_id):
     schedule.custom_alarm_time = custom_alarm_time if custom_alarm_time else None
     
     db.session.commit()
+    # Remove existing jobs and re-schedule per-occurrence jobs for this schedule
+    try:
+        remove_jobs_for_schedule(schedule.id)
+        if schedule.alarm_enabled:
+            schedule_jobs_for_schedule(schedule)
+    except Exception:
+        pass
+
     # Trigger immediate notification check (background) to handle edited times that are imminent
     try:
         threading.Thread(target=check_and_send_notifications, daemon=True).start()
@@ -160,6 +175,11 @@ def delete_schedule_route(schedule_id):
     schedule = Schedule.query.filter_by(id=schedule_id, user_id=current_user.id).first_or_404()
     
     subject_name = schedule.subject
+    # Remove any scheduled jobs for this schedule before deleting
+    try:
+        remove_jobs_for_schedule(schedule.id)
+    except Exception:
+        pass
     db.session.delete(schedule)
     db.session.commit()
     
