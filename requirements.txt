@@ -39,4 +39,4 @@ eventlet>=0.36.1
 APScheduler==3.10.4
 
 # PostgreSQL driver
-psycopg[binary]==3.1.18
+psycopg2-binary==2.9.9
