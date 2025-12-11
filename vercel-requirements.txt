@@ -1,0 +1,42 @@
+# Flask Core
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Database
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+# SQLAlchemy 2.0.23 breaks on Python 3.13 due to TypingOnly assertion; bump to a 3.13-compatible release
+SQLAlchemy==2.0.34
+
+# Authentication
+Flask-Login==0.6.3
+
+# Real-time notifications
+Flask-SocketIO==5.3.5
+python-socketio==5.10.0
+
+# Forms and validation
+email-validator==2.1.0
+
+# File handling
+python-magic==0.4.27
+
+# PDF processing (optional, for COR parsing)
+PyPDF2==3.0.1
+
+# Google OAuth (optional)
+oauthlib==3.2.2
+requests==2.31.0
+
+# Development
+python-dotenv==1.0.0
+
+# Production server
+gunicorn==21.2.0
+eventlet>=0.36.1
+
+# Background scheduler
+APScheduler==3.10.4
+
+# Note: psycopg2-binary is excluded for Vercel (serverless);
+# use requirements.txt for production with persistent worker/DB
